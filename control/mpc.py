@@ -40,6 +40,7 @@ class ForecastMPC:
         self.plan: pd.DataFrame | None = None
         self.solve_failures = 0
         self.env = None  # only OracleMPC uses this
+        self.kiln_available = True  # a fault monitor may take the kiln away
 
         self.E = v(curves, "plant_sizing", "electrolyser_kw")
         self.K = v(curves, "plant_sizing", "dac_kiln_kw")
@@ -70,6 +71,13 @@ class ForecastMPC:
         self.derate = v(curves, "solar", "system_derate")
         self.temp_coeff = v(curves, "solar", "temp_coeff_per_c")
         self.solar_kwp = v(curves, "plant_sizing", "solar_capacity_kwp")
+
+    def set_kiln_available(self, available: bool) -> None:
+        """Fault monitor hook: replan immediately without the (or with a
+        repaired) kiln instead of executing a plan that assumes it works."""
+        if available != self.kiln_available:
+            self.kiln_available = available
+            self.plan = None
 
     # ------------------------------------------------------------- weather in
     def _solar_kw(self, weather: pd.DataFrame) -> np.ndarray:
@@ -140,9 +148,10 @@ class ForecastMPC:
 
         lb = np.zeros(n_var)
         ub = np.full(n_var, np.inf)
+        kiln_cap = self.K if self.kiln_available else 0.0
         ub[off["e"] : off["e"] + H] = self.E
-        ub[off["k"] : off["k"] + H] = self.K
-        ub[off["kp"] : off["kp"] + H] = self.K / self.e_kiln
+        ub[off["k"] : off["k"] + H] = kiln_cap
+        ub[off["kp"] : off["kp"] + H] = kiln_cap / self.e_kiln
         ub[off["a"] : off["a"] + H] = self.A
         ub[off["c"] : off["c"] + H] = self.CAP
         ub[off["chg"] : off["chg"] + H] = max(self.b_cap, 1.0)
