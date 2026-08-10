@@ -100,7 +100,7 @@ def main() -> None:
                 results[key] = json.loads(out.read_text())
                 print(f"{key}: cached")
                 continue
-            env = PlantEnv.from_site(lat, lon, "2025-01-01", "2025-12-31", curves=curves)
+            env = PlantEnv.from_site(lat, lon, "2024-12-01", "2025-12-31", curves=curves)
             controller = factory(curves)
             monitor = KilnFaultMonitor() if (cname == "mpc" and scenario == "kiln_heater") else None
             hook = None

@@ -121,6 +121,25 @@ def test_kiln_fault_forces_shutdown(plant):
     assert r.modes["kiln"] == "off"
 
 
+def test_battery_discharge_not_gated_by_charge_command():
+    """A forecast bust during a planned-charge hour must still be covered by
+    the battery - discharge is automatic, never blocked by the action sign."""
+    import copy
+
+    from sim.subsystems import load_curves as lc
+
+    curves = copy.deepcopy(lc())
+    curves["plant_sizing"]["battery_kwh"]["value"] = 500
+    plant = Plant(curves)
+    plant.stores.battery_kwh.level = 400.0
+    # night (no solar), electrolyser warm and commanded on, action REQUESTS charge
+    plant.units["electrolyser"].mode = "on"
+    act = Action(electrolyser_mode="on", electrolyser_load=0.5, battery_charge_kw=50.0)
+    r = plant.step(act, ghi=0.0, t_amb=10.0)
+    assert r.flows["h2_made"] > 0, "battery should power the electrolyser despite charge request"
+    assert plant.stores.battery_kwh.level < 400.0
+
+
 def test_capex_in_plausible_range(plant):
     total = total_capex_gbp(plant.curves)
     assert 300_000 < total < 900_000, f"1MW plant capex {total} looks wrong"

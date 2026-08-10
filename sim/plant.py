@@ -40,7 +40,7 @@ class Action:
     absorber_load: float = 0.0
     sabatier_mode: str = "off"
     sabatier_load: float = 0.0
-    battery_charge_kw: float = 0.0  # positive = charge, negative = allow discharge
+    battery_charge_kw: float = 0.0  # positive = charge cap from surplus; discharge is automatic
 
 
 @dataclass
@@ -117,8 +117,12 @@ class Plant:
         kiln_req = kiln.usable_kw(action.kiln_load) if (kiln_available and kiln.mode == ON) else 0.0
         elec_req = elec.usable_kw(action.electrolyser_load)
 
-        discharge_allowed_kw = max(0.0, -action.battery_charge_kw)
-        max_batt_delivery_kw = min(discharge_allowed_kw, batt.level * self.batt_eff / dt)
+        # discharge is ALWAYS available to cover deficits: charging draws only
+        # from post-load surplus, so charge and discharge are mutually
+        # exclusive per hour by construction and no controller knob is needed.
+        # (Gating discharge on the action's sign meant a forecast bust during
+        # a planned-charge hour shed loads while a full battery sat idle.)
+        max_batt_delivery_kw = batt.level * self.batt_eff / dt
         available = solar_kw + max_batt_delivery_kw
 
         def take(req: float, label: str) -> float:

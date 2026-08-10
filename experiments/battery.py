@@ -23,7 +23,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from control.mpc import ForecastMPC
+from control.mpc import ForecastMPC, OracleMPC
 from experiments.common import RESULTS_DIR, run_episode
 from sim.env import PlantEnv
 from sim.subsystems import load_curves, v
@@ -31,6 +31,7 @@ from sim.subsystems import load_curves, v
 SITE = ("Seville ES", 37.39, -5.99)
 START, DAYS = "2025-03-01", 28
 SIZES_KWH = [0, 250, 500, 1000, 2000]
+ORACLE_SIZES = [0, 1000, 2000]  # sanity: perfect info must gain monotonically
 CAPEX_GRID = [50, 100, 150, 250]  # GBP/kWh scenarios
 
 
@@ -39,24 +40,31 @@ def main() -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     name, lat, lon = SITE
 
-    runs = {}
-    for size in SIZES_KWH:
-        out = out_dir / f"battery_{size}.json"
+    def episode(size: int, factory, tag: str) -> dict:
+        out = out_dir / f"battery_{tag}_{size}.json"
         if out.exists():
-            runs[size] = json.loads(out.read_text())
-            print(f"battery {size} kWh: cached")
-            continue
+            print(f"battery {tag} {size} kWh: cached")
+            return json.loads(out.read_text())
         curves = copy.deepcopy(load_curves())
         curves["plant_sizing"]["battery_kwh"]["value"] = size
-        env = PlantEnv.from_site(lat, lon, "2025-01-01", "2025-12-31", curves=curves)
+        env = PlantEnv.from_site(lat, lon, "2024-12-01", "2025-12-31", curves=curves)
         summary = run_episode(
-            ForecastMPC(curves), env, START, DAYS,
-            series_path=RESULTS_DIR / "series" / f"battery_{size}.json.gz",
+            factory(curves), env, START, DAYS,
+            series_path=RESULTS_DIR / "series" / f"battery_{tag}_{size}.json.gz",
         )
-        summary |= {"battery_kwh": size, "site": name, "month": START}
+        summary |= {"battery_kwh": size, "site": name, "month": START, "controller": tag}
         out.write_text(json.dumps(summary, indent=1))
-        runs[size] = summary
-        print(f"battery {size} kWh: {summary['methane_kg']:.0f} kg")
+        print(f"battery {tag} {size} kWh: {summary['methane_kg']:.0f} kg")
+        return summary
+
+    runs = {size: episode(size, ForecastMPC, "mpc") for size in SIZES_KWH}
+
+    print("\noracle monotonicity check (perfect info must not lose from more storage):")
+    oracle_runs = {size: episode(size, OracleMPC, "oracle") for size in ORACLE_SIZES}
+    kgs = [oracle_runs[s]["methane_kg"] for s in ORACLE_SIZES]
+    monotone = all(kgs[i + 1] >= kgs[i] - 0.02 * kgs[i] for i in range(len(kgs) - 1))
+    print(f"  oracle kg by size {ORACLE_SIZES}: {[round(k) for k in kgs]} "
+          f"-> {'MONOTONE (model sane)' if monotone else 'NON-MONOTONE (investigate!)'}")
 
     # flip-point analysis: annualised value of extra methane vs annualised
     # battery cost, across capex scenarios

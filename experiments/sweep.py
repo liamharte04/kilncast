@@ -74,7 +74,7 @@ def main() -> None:
                     continue
                 if env is None:
                     print(f"  fetching weather for {site} ({lat}, {lon})...")
-                    env = PlantEnv.from_site(lat, lon, "2025-01-01", "2025-12-31")
+                    env = PlantEnv.from_site(lat, lon, "2024-12-01", "2025-12-31")
                 controller = CONTROLLERS[cname](curves)
                 summary = run_episode(
                     controller, env, month, args.days,

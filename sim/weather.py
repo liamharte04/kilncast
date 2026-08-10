@@ -155,7 +155,12 @@ def assemble_forecast(
             sel = out["lead_days"] == n
             vals.loc[sel] = issued[f"{var}_lead{n}"].reindex(hours[sel]).values
         beyond = out["lead_days"] > MAX_LEAD_DAYS
-        vals.loc[beyond] = [climos[var].get(h.hour) for h in hours[beyond]]
+        vals.loc[beyond] = [float(climos[var].get(h.hour, float("nan"))) for h in hours[beyond]]
+        if vals.loc[beyond].isna().any():
+            raise ValueError(
+                "climatology tail has no history - load actuals starting at least "
+                "30 days before the first episode (e.g. fetch from the prior month)"
+            )
         out[var] = vals
 
     out["source"] = "issued"
