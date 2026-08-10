@@ -111,8 +111,8 @@ class Plant:
         batt = stores.battery_kwh
 
         # -- power requests, highest priority first
-        kiln_thermal_kw = kiln.overhead_kw() if (kiln_available and kiln.mode in (STARTING, STANDBY)) else 0.0
-        overhead_req = elec.overhead_kw() + sab.overhead_kw() + kiln_thermal_kw
+        kiln_hold_req = kiln.overhead_kw() if (kiln_available and kiln.mode in (STARTING, STANDBY)) else 0.0
+        overhead_req = elec.overhead_kw() + sab.overhead_kw()  # startup draws only
         absorber_req = absorber.rated_kw * max(0.0, min(1.0, action.absorber_load))
         kiln_req = kiln.usable_kw(action.kiln_load) if (kiln_available and kiln.mode == ON) else 0.0
         elec_req = elec.usable_kw(action.electrolyser_load)
@@ -134,6 +134,7 @@ class Plant:
             return grant
 
         overhead_kw = take(overhead_req, "overheads")
+        kiln_hold_kw = take(kiln_hold_req, "kiln-hold")  # granted heat only - no free warmth
         absorber_kw = take(absorber_req, "absorber")
         kiln_kw = take(kiln_req, "kiln")
         elec_kw = take(elec_req, "electrolyser")
@@ -150,7 +151,7 @@ class Plant:
             clips.append(f"battery: full, rejected {rejected_kwh / dt:.1f} kW")
             charge_kw -= rejected_kwh / (self.batt_eff * dt)
 
-        consumption_kw = overhead_kw + absorber_kw + kiln_kw + elec_kw
+        consumption_kw = overhead_kw + kiln_hold_kw + absorber_kw + kiln_kw + elec_kw
         used_kw = consumption_kw + charge_kw
 
         # -- battery discharge covers granted load beyond solar
@@ -164,8 +165,8 @@ class Plant:
         # -- island energy audit: sources - sinks must be ~0
         balance = solar_kw * dt + delivered_kwh - used_kw * dt - curtailed_kwh
 
-        # -- kiln thermal state (heating draw during start/standby, process power when on)
-        kiln.thermal_step(kiln_kw + kiln_thermal_kw, dt)
+        # -- kiln thermal state: only power actually GRANTED heats the kiln
+        kiln.thermal_step(kiln_kw + kiln_hold_kw, dt)
 
         # -- chemistry chain
         co2_captured = absorber_kw * dt / self.e_absorb if self.e_absorb else 0.0

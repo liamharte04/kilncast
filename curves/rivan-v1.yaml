@@ -39,7 +39,7 @@ electrolyser:   # alkaline (AWE) - Rivan's stated choice on capex grounds
   min_load_frac:           {value: 0.20, unit: frac,     source: literature, note: alkaline minimum load ~20 percent of nominal}
   cold_start_h:            {value: 1.5,  unit: h,        source: literature, note: alkaline cold start 1-2 h}
   start_draw_frac:         {value: 0.20, unit: frac,     source: assumed, note: power draw while warming up, no H2 output}
-  hot_standby_power_frac:  {value: 0.02, unit: frac,     source: assumed, note: keep-warm power as fraction of rated}
+  hot_standby_power_frac:  {value: 0.0,  unit: frac,     source: assumed, note: passive warm-holding at plant scale; startup draws are modelled explicitly}
   ramp_frac_per_min:       {value: 1.0,  unit: frac/min, source: literature, note: electrical response near-instant above min load}
   degradation_note: cycling degradation dominated by thermal/pressure cycles, not load-following (literature)
 
@@ -61,8 +61,8 @@ sabatier:   # CO2 + 4H2 -> CH4 + 2H2O, exothermic (-165 kJ/mol)
   ramp_frac_per_min:       {value: 0.035, unit: frac/min, source: literature, note: fixed-bed methanation 3-4 percent/min holding gas quality}
   hot_standby_to_spec_s:   {value: 130,  unit: s,        source: literature, note: SNG-spec gas ~130 s after start from hot standby}
   cold_start_h:            {value: 4.0,  unit: h,        source: assumed, note: catalyst-safe thermal ramp from cold}
-  hot_standby_power_frac:  {value: 0.01, unit: frac,     source: assumed}
-  heater_kw:               {value: 50,   unit: kW,       source: assumed, note: electric trim/standby heat rating for the reactor skid}
+  hot_standby_power_frac:  {value: 0.0,  unit: frac,     source: assumed, note: passive warm-holding; cold starts are modelled explicitly}
+  heater_kw:               {value: 50,   unit: kW,       source: assumed, note: electric heat rating for reactor cold starts}
   capex_gbp_per_kg_h:      {value: 1200, unit: GBP per kg/h, source: assumed, note: no public figure; scaled to fit 1MW plant target}
 
 h2_buffer:
