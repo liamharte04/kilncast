@@ -1,0 +1,82 @@
+# Operating curves and economics for the reference plant - version rivan-v1
+#
+# Every parameter carries a `source` tag:
+#   rivan-h2     https://rivan.com/1-kg_h2/
+#   rivan-dac    https://rivan.com/how-to-make-dac-cheap/
+#   rivan-gsmr   https://rivan.com/rivan-achieves-gsmr-grid-specification-reactor-performance/
+#   rivan-home   https://rivan.com/ (1MW unit targets: <150k GBP, >30% net eff, 10+ yr)
+#   literature   peer-reviewed ranges (see notes per entry)
+#   chemistry    stoichiometry / physical constants, not tunable
+#   assumed      our engineering estimate - no public figure found
+#
+# Approach confirmed with the organisers: entrants construct their own curves
+# from public sources. Swap this file to model a different plant.
+
+meta:
+  version: rivan-v1
+  updated: 2026-08-10
+
+plant_sizing:
+  solar_capacity_kwp:      {value: 1000, unit: kWp,  source: rivan-home, note: reference 1MW unit}
+  electrolyser_kw:         {value: 600,  unit: kW,   source: assumed, note: largest load, sized to peak-sun operation}
+  dac_kiln_kw:             {value: 220,  unit: kW,   source: assumed, note: calciner electric heating}
+  dac_absorber_kw:         {value: 40,   unit: kW,   source: assumed, note: fans and pumps, near-continuous}
+  sabatier_capacity_kg_ch4_per_h: {value: 25, unit: kg/h, source: assumed, note: matched to electrolyser H2 at full load}
+  battery_kwh:             {value: 0,    unit: kWh,  source: assumed, note: default zero per Rivan no-battery philosophy; sensitivity sweep varies this}
+  h2_buffer_kg:            {value: 100,  unit: kg,   source: assumed, note: ~4 h of electrolyser output at low pressure}
+  silo_hours_cao:          {value: 48,   unit: h,    source: assumed, note: CaCO3/CaO chemical-state buffer, silos are cheap}
+
+solar:
+  model: pvwatts-simple   # P = kwp * (ghi/1000) * derate * (1 + gamma*(t_cell - 25)); t_cell = t_amb + ghi/800*25
+  system_derate:           {value: 0.85,  unit: frac,     source: assumed, note: soiling, wiring, inverter-free DC losses}
+  temp_coeff_per_c:        {value: -0.0035, unit: 1/C,    source: literature, note: typical mono-Si power coefficient}
+  capex_gbp_per_kwp:       {value: 350,   unit: GBP/kWp,  source: assumed, note: utility-scale 2026; Rivan claims <0.5p/kWh solar}
+
+electrolyser:   # alkaline (AWE) - Rivan's stated choice on capex grounds
+  capex_gbp_per_kw:        {value: 200,  unit: GBP/kW,   source: rivan-h2, note: AWE 200 vs PEM 1000 vs SOEC 4000}
+  specific_energy_kwh_per_kg_h2: {value: 52, unit: kWh/kg, source: literature, note: AWE system-level 50-55 kWh/kg}
+  min_load_frac:           {value: 0.20, unit: frac,     source: literature, note: alkaline minimum load ~20 percent of nominal}
+  cold_start_h:            {value: 1.5,  unit: h,        source: literature, note: alkaline cold start 1-2 h}
+  hot_standby_power_frac:  {value: 0.02, unit: frac,     source: assumed, note: keep-warm power as fraction of rated}
+  ramp_frac_per_min:       {value: 1.0,  unit: frac/min, source: literature, note: electrical response near-instant above min load}
+  degradation_note: cycling degradation dominated by thermal/pressure cycles, not load-following (literature)
+
+dac:   # calcium-looping direct air capture; KOH absorption -> CaCO3 -> ~900C calcination
+  specific_energy_kwh_per_t_co2: {value: 1400, unit: kWh/t, source: rivan-dac, note: real-world range 1125-1638 cited across Rivan posts}
+  kiln_temp_c:             {value: 900,  unit: C,        source: rivan-dac}
+  kiln_thermal_tau_h:      {value: 6.0,  unit: h,        source: assumed, note: first-order cool-down time constant, thermally massive}
+  kiln_heat_loss_frac:     {value: 0.05, unit: frac,     source: assumed, note: idle heat loss as fraction of rated power at temperature}
+  kiln_cold_start_h:       {value: 8.0,  unit: h,        source: assumed, note: refractory-safe heat-up from cold}
+  min_load_frac:           {value: 0.30, unit: frac,     source: assumed, note: calciner stable operating floor}
+  capex_gbp_per_kw:        {value: 250,  unit: GBP/kW,   source: rivan-dac, note: equipment cost target <250 GBP/kW}
+
+sabatier:   # CO2 + 4H2 -> CH4 + 2H2O, exothermic (-165 kJ/mol)
+  conversion_frac:         {value: 0.999, unit: frac,    source: rivan-gsmr, note: claimed 99.9 percent conversion}
+  purity_h2_max_frac:      {value: 0.001, unit: frac,    source: rivan-gsmr, note: GS(M)R grid spec <0.1 percent H2}
+  turndown_min_frac:       {value: 0.10, unit: frac,     source: rivan-gsmr, note: 90 percent turndown claim}
+  ramp_frac_per_min:       {value: 0.035, unit: frac/min, source: literature, note: fixed-bed methanation 3-4 percent/min holding gas quality}
+  hot_standby_to_spec_s:   {value: 130,  unit: s,        source: literature, note: SNG-spec gas ~130 s after start from hot standby}
+  cold_start_h:            {value: 4.0,  unit: h,        source: assumed, note: catalyst-safe thermal ramp from cold}
+  hot_standby_power_frac:  {value: 0.01, unit: frac,     source: assumed}
+  capex_gbp_per_kg_h:      {value: 1200, unit: GBP per kg/h, source: assumed, note: no public figure; scaled to fit 1MW plant target}
+
+h2_buffer:
+  pressure_bar:            {value: 10,   unit: bar,      source: rivan-h2, note: in-situ low-pressure use, no costly compression}
+  compression_kwh_per_kg:  {value: 1.0,  unit: kWh/kg,   source: assumed, note: low-pressure compression only}
+  capex_gbp_per_kg:        {value: 400,  unit: GBP/kg,   source: assumed, note: low-pressure vessel steel}
+
+battery:   # priced honestly for the sensitivity sweep; default capacity zero
+  capex_gbp_per_kwh:       {value: 150,  unit: GBP/kWh,  source: assumed, note: 2026 LFP system-level}
+  round_trip_eff:          {value: 0.88, unit: frac,     source: literature}
+  lifetime_cycles:         {value: 6000, unit: cycles,   source: literature}
+
+economics:
+  plant_lifetime_years:    {value: 10,   unit: yr,       source: rivan-home, note: 10+ year life target}
+  amortisation: straight-line   # assumed
+  methane_value_gbp_per_kg: {value: 0.55, unit: GBP/kg,  source: assumed, note: ~35 GBP/MWh HHV x 15.4 kWh/kg}
+  ch4_hhv_kwh_per_kg:      {value: 15.4, unit: kWh/kg,   source: chemistry}
+
+stoichiometry:   # fixed by chemistry - not tunable
+  kg_h2_per_kg_ch4:        {value: 0.503, unit: kg/kg,   source: chemistry}
+  kg_co2_per_kg_ch4:       {value: 2.744, unit: kg/kg,   source: chemistry}
+  kg_h2o_per_kg_h2:        {value: 8.94,  unit: kg/kg,   source: chemistry, note: electrolysis water feed}

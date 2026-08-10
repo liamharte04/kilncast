@@ -26,7 +26,7 @@ import pandas as pd
 import requests
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: E402
+import matplotlib.pyplot as plt
 
 SITES = {
     "Seville ES": (37.39, -5.99),
@@ -43,7 +43,7 @@ def fetch(url: str, params: dict, retries: int = 3) -> dict:
             r = requests.get(url, params=params, timeout=60)
             r.raise_for_status()
             return r.json()
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             if attempt == retries - 1:
                 raise
             print(f"  retry {attempt + 1} after error: {e}")
