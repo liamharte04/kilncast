@@ -24,6 +24,7 @@ plant_sizing:
   sabatier_capacity_kg_ch4_per_h: {value: 25, unit: kg/h, source: assumed, note: matched to electrolyser H2 at full load}
   battery_kwh:             {value: 0,    unit: kWh,  source: assumed, note: default zero per Rivan no-battery philosophy; sensitivity sweep varies this}
   h2_buffer_kg:            {value: 100,  unit: kg,   source: assumed, note: ~4 h of electrolyser output at low pressure}
+  co2_buffer_kg:           {value: 150,  unit: kg,   source: assumed, note: small gas holder between kiln and reactor}
   silo_hours_cao:          {value: 48,   unit: h,    source: assumed, note: CaCO3/CaO chemical-state buffer, silos are cheap}
 
 solar:
@@ -37,12 +38,15 @@ electrolyser:   # alkaline (AWE) - Rivan's stated choice on capex grounds
   specific_energy_kwh_per_kg_h2: {value: 52, unit: kWh/kg, source: literature, note: AWE system-level 50-55 kWh/kg}
   min_load_frac:           {value: 0.20, unit: frac,     source: literature, note: alkaline minimum load ~20 percent of nominal}
   cold_start_h:            {value: 1.5,  unit: h,        source: literature, note: alkaline cold start 1-2 h}
+  start_draw_frac:         {value: 0.20, unit: frac,     source: assumed, note: power draw while warming up, no H2 output}
   hot_standby_power_frac:  {value: 0.02, unit: frac,     source: assumed, note: keep-warm power as fraction of rated}
   ramp_frac_per_min:       {value: 1.0,  unit: frac/min, source: literature, note: electrical response near-instant above min load}
   degradation_note: cycling degradation dominated by thermal/pressure cycles, not load-following (literature)
 
 dac:   # calcium-looping direct air capture; KOH absorption -> CaCO3 -> ~900C calcination
   specific_energy_kwh_per_t_co2: {value: 1400, unit: kWh/t, source: rivan-dac, note: real-world range 1125-1638 cited across Rivan posts}
+  absorber_energy_kwh_per_t: {value: 200,  unit: kWh/t, source: assumed, note: fans/pumps share of the total specific energy}
+  kiln_energy_kwh_per_t:   {value: 1200, unit: kWh/t,   source: rivan-dac, note: calcination share; kiln dominates DAC energy}
   kiln_temp_c:             {value: 900,  unit: C,        source: rivan-dac}
   kiln_thermal_tau_h:      {value: 6.0,  unit: h,        source: assumed, note: first-order cool-down time constant, thermally massive}
   kiln_heat_loss_frac:     {value: 0.05, unit: frac,     source: assumed, note: idle heat loss as fraction of rated power at temperature}
@@ -58,6 +62,7 @@ sabatier:   # CO2 + 4H2 -> CH4 + 2H2O, exothermic (-165 kJ/mol)
   hot_standby_to_spec_s:   {value: 130,  unit: s,        source: literature, note: SNG-spec gas ~130 s after start from hot standby}
   cold_start_h:            {value: 4.0,  unit: h,        source: assumed, note: catalyst-safe thermal ramp from cold}
   hot_standby_power_frac:  {value: 0.01, unit: frac,     source: assumed}
+  heater_kw:               {value: 50,   unit: kW,       source: assumed, note: electric trim/standby heat rating for the reactor skid}
   capex_gbp_per_kg_h:      {value: 1200, unit: GBP per kg/h, source: assumed, note: no public figure; scaled to fit 1MW plant target}
 
 h2_buffer:
@@ -73,6 +78,7 @@ battery:   # priced honestly for the sensitivity sweep; default capacity zero
 economics:
   plant_lifetime_years:    {value: 10,   unit: yr,       source: rivan-home, note: 10+ year life target}
   amortisation: straight-line   # assumed
+  opex_frac_per_year:      {value: 0.02, unit: frac/yr,  source: assumed, note: annual O&M as fraction of capex}
   methane_value_gbp_per_kg: {value: 0.55, unit: GBP/kg,  source: assumed, note: ~35 GBP/MWh HHV x 15.4 kWh/kg}
   ch4_hhv_kwh_per_kg:      {value: 15.4, unit: kWh/kg,   source: chemistry}
 
