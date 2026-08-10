@@ -1,0 +1,20 @@
+# Internal planning docs - never ship with the public repo
+SOTA-COMMISSION-II-BUILD-PLAN.md
+docs-private/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# Data and outputs
+data/cache/
+results/
+*.png
+!docs/figures/*.png
+
+# OS
+Thumbs.db
+.DS_Store

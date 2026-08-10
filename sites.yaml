@@ -1,0 +1,25 @@
+# Candidate plant sites for the evaluation sweep.
+# Chosen for solar-resource spread (UK ~12% capacity factor vs Iberia ~20%)
+# and geographic diversity across Europe. Trimmed in Phase 4 if any site has
+# poor weather-archive coverage.
+sites:
+  - {name: Wiltshire UK,        country: GB, lat: 51.20,  lon: -1.80}   # Rivan Project Starwell county
+  - {name: Cornwall UK,         country: GB, lat: 50.40,  lon: -4.90}
+  - {name: Kent UK,             country: GB, lat: 51.30,  lon: 0.50}
+  - {name: York UK,             country: GB, lat: 53.90,  lon: -1.20}
+  - {name: Belfast UK,          country: GB, lat: 54.60,  lon: -5.93}
+  - {name: Seville ES,          country: ES, lat: 37.39,  lon: -5.99}
+  - {name: Zaragoza ES,         country: ES, lat: 41.65,  lon: -0.88}
+  - {name: Almeria ES,          country: ES, lat: 36.84,  lon: -2.46}
+  - {name: Badajoz ES,          country: ES, lat: 38.88,  lon: -6.97}
+  - {name: Evora PT,            country: PT, lat: 38.57,  lon: -7.91}
+  - {name: Faro PT,             country: PT, lat: 37.02,  lon: -7.93}
+  - {name: Toulouse FR,         country: FR, lat: 43.60,  lon: 1.44}
+  - {name: Marseille FR,        country: FR, lat: 43.30,  lon: 5.37}
+  - {name: Leipzig DE,          country: DE, lat: 51.34,  lon: 12.37}
+  - {name: Munich DE,           country: DE, lat: 48.14,  lon: 11.58}
+  - {name: Foggia IT,           country: IT, lat: 41.46,  lon: 15.55}
+  - {name: Catania IT,          country: IT, lat: 37.50,  lon: 15.09}
+  - {name: Larissa GR,          country: GR, lat: 39.64,  lon: 22.42}
+  - {name: Heraklion GR,        country: GR, lat: 35.34,  lon: 25.14}
+  - {name: Graz AT,             country: AT, lat: 47.07,  lon: 15.44}
