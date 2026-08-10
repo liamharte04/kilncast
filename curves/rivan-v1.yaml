@@ -48,10 +48,10 @@ dac:   # calcium-looping direct air capture; KOH absorption -> CaCO3 -> ~900C ca
   absorber_energy_kwh_per_t: {value: 200,  unit: kWh/t, source: assumed, note: fans/pumps share of the total specific energy}
   kiln_energy_kwh_per_t:   {value: 1200, unit: kWh/t,   source: rivan-dac, note: calcination share; kiln dominates DAC energy}
   kiln_temp_c:             {value: 900,  unit: C,        source: rivan-dac}
-  kiln_thermal_tau_h:      {value: 6.0,  unit: h,        source: assumed, note: first-order cool-down time constant, thermally massive}
-  kiln_heat_loss_frac:     {value: 0.05, unit: frac,     source: assumed, note: idle heat loss as fraction of rated power at temperature}
-  kiln_cold_start_h:       {value: 8.0,  unit: h,        source: assumed, note: refractory-safe heat-up from cold}
-  min_load_frac:           {value: 0.30, unit: frac,     source: assumed, note: calciner stable operating floor}
+  kiln_thermal_tau_h:      {value: 12.0, unit: h,        source: assumed, note: first-order cool-down time constant, well-insulated mass}
+  kiln_heatup_tau_h:       {value: 4.0,  unit: h,        source: assumed, note: heat-up scale; full power from cold reaches 900C in ~4.3 h}
+  kiln_hold_power_frac:    {value: 0.33, unit: frac,     source: assumed, note: power to hold 900C = rated x heatup_tau/thermal_tau}
+  min_load_frac:           {value: 0.0,  unit: frac,     source: assumed, note: resistive heating modulates continuously - no floor}
   capex_gbp_per_kw:        {value: 250,  unit: GBP/kW,   source: rivan-dac, note: equipment cost target <250 GBP/kW}
 
 sabatier:   # CO2 + 4H2 -> CH4 + 2H2O, exothermic (-165 kJ/mol)

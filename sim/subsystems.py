@@ -105,22 +105,25 @@ class Unit:
 class Kiln(Unit):
     """Calciner with continuous thermal state (0 = cold, 1 = 900C).
 
-    Heating uses full commanded power; processing CaCO3 requires temp >= hot
-    threshold. Unpowered, temperature decays with time constant tau - that
-    decay is what pre-charging before a storm is fighting.
+    One LINEAR thermal equation for all regimes (so a controller's internal
+    model can match the plant exactly):
+
+        dT/dt = power/(rated x heatup_tau) - T/thermal_tau
+
+    Full power from cold reaches the hot threshold in ~4.3 h; holding
+    temperature costs rated x heatup_tau/thermal_tau (~33% of rated).
+    Processing CaCO3 requires temp >= hot threshold. The decay when
+    unpowered is what pre-charging before a storm is fighting.
     """
 
     temp_frac: float = 0.0
-    tau_h: float = 6.0
-    heat_loss_frac: float = 0.05
+    tau_h: float = 12.0
+    heatup_tau_h: float = 4.0
     hot_threshold: float = 0.9
 
     def thermal_step(self, power_kw: float, dt: float) -> None:
-        if power_kw > 0:
-            heat_in = power_kw / self.rated_kw if self.rated_kw else 0.0
-            delta = dt * (heat_in - self.heat_loss_frac * self.temp_frac) / self.cold_start_h
-        else:
-            delta = -dt * self.temp_frac / self.tau_h
+        heat_in = power_kw / self.rated_kw / self.heatup_tau_h if self.rated_kw else 0.0
+        delta = dt * (heat_in - self.temp_frac / self.tau_h)
         self.temp_frac = max(0.0, min(1.0, self.temp_frac + delta))
 
     @property
@@ -157,11 +160,11 @@ def build_units(curves: dict) -> dict:
             name="kiln",
             rated_kw=v(sizing, "dac_kiln_kw"),
             min_load_frac=v(dac, "min_load_frac"),
-            cold_start_h=v(dac, "kiln_cold_start_h"),
-            standby_power_frac=v(dac, "kiln_heat_loss_frac"),
+            cold_start_h=0.0,  # thermal state gates processing, not a mode timer
+            standby_power_frac=v(dac, "kiln_hold_power_frac"),
             start_draw_frac=1.0,
             tau_h=v(dac, "kiln_thermal_tau_h"),
-            heat_loss_frac=v(dac, "kiln_heat_loss_frac"),
+            heatup_tau_h=v(dac, "kiln_heatup_tau_h"),
         ),
         "sabatier": Unit(
             name="sabatier",

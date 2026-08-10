@@ -55,7 +55,7 @@ class PlantEnv:
         row = self.actuals.loc[self.t]
         result = self.plant.step(
             action,
-            ghi=float(row["shortwave_radiation"]) + self.plant.faults.irradiance_sensor_bias,
+            ghi=float(row["shortwave_radiation"]),  # physics gets the true sky
             t_amb=float(row["temperature_2m"]),
         )
         self.log.add(result)
@@ -74,8 +74,15 @@ class PlantEnv:
 
     def _obs(self) -> dict:
         p = self.plant
+        row = self.actuals.loc[self.t] if self.t in self.actuals.index else None
+        # On-site pyranometer/thermometer reading for the CURRENT hour. The
+        # irradiance sensor bias fault distorts what the controller sees -
+        # never the physics itself.
+        ghi_now = float(row["shortwave_radiation"]) + p.faults.irradiance_sensor_bias if row is not None else 0.0
         return {
             "time": self.t,
+            "ghi_now": max(0.0, ghi_now),
+            "t_amb_now": float(row["temperature_2m"]) if row is not None else 15.0,
             "stores": {
                 "h2_kg": p.stores.h2.level,
                 "co2_kg": p.stores.co2.level,
