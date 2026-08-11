@@ -5,13 +5,12 @@ plant, scheduled against real archived weather forecasts.*
 
 ![Storm week: run-when-sunny vs forecast-aware](docs/figures/storm_week.gif)
 
-- **+90% methane vs run-when-sunny** - same hardware, 4 European sites x 4
+- **+95.6% methane vs run-when-sunny** - same hardware, 4 European sites x 4
   seasons of real 2025 weather and real as-issued forecasts
-  <!--NUM:headline_uplift-->
-- **~70% of the perfect-hindsight gap closed** - against honest 7-day
-  forecast error <!--NUM:gap_closed-->
-- **Wiltshire, January: baseline 0 kg, forecast-MPC 92 kg** - the naive plant
-  made nothing all month in Rivan's own county <!--NUM:wiltshire_jan-->
+- **75% of the perfect-hindsight gap closed** - against honest 7-day
+  forecast error (per site-month: 0-98%, median 75%)
+- **Wiltshire, October: baseline 41 kg, forecast-MPC 726 kg** - 18x from the
+  same sky, in Rivan's own county
 
 Built for [SoTA Commission II: Intermittent Abundance](https://sotaletters.substack.com/p/sota-commission-ii-intermittent-abundance).
 
@@ -73,7 +72,14 @@ regenerate with `uv run python experiments/sweep.py`.
 
 The geographic finding: northern sites gain the most from scheduling and
 close the least of the oracle gap - scheduling matters most, and forecasts
-help least, exactly where the sun is scarce.
+help least, exactly where the sun is scarce. The extreme cell makes the
+point brutally: in Wiltshire's January NOTHING we built produces a single
+kilogram - not the baseline, not the rulebooks, not the forecast MPC (it
+spent 144 hours heating a kiln that never crossed the calcination
+threshold) - except the perfect-forecast oracle (194 kg). Deep winter at
+51N is where forecast error costs everything, and we report it rather than
+hide it. The controlled comparison: the tuned rulebook gains +55.7% over
+the baseline; the MPC adds +25.6% on top of that.
 
 ## The storm week
 
@@ -90,13 +96,19 @@ detection -> replan -> recovery) are on the second tab.
 
 Failures are findings; these are ours:
 
-- **A battery never paid for itself** at any 2026 price (50-250 GBP/kWh),
-  and under realistic forecasts a deterministic MPC used it to do WORSE -
-  storage amplifies plan leverage on forecast error. Solving harder made it
-  worse, consistent with the optimizer's curse. Robust/stochastic MPC is the
-  named next step. <!--NUM:battery-->
-- **Hand rules barely dent the problem** - even the tuned rulebook trails
-  the MPC badly. <!--NUM:heuristics-->
+- **A battery never paid for itself** at any 2026 price (50-250 GBP/kWh) -
+  and 0-2 MWh of storage changed output by less than the measured solver
+  noise band (8.2%) under BOTH real and perfect forecasts. The plant's
+  chemical and thermal buffers already capture the arbitrage. (An earlier
+  controller with a stale-replan bug showed batteries amplifying forecast
+  error dramatically - fixed by daily replanning and kept in git history as
+  a cautionary tale about planning cadence.)
+- **Hand rules leave a third of the value on the table** - our best rulebook
+  (+55.7%) still trails the MPC (+95.6%) by 26% relative, and the naive
+  rules gained under 1%.
+- **Tighter solver optimality sometimes executed worse** - a plan that is
+  more optimal against a wrong forecast is not more optimal against the sky.
+  Salvage-value sensitivity: +/-50% moves output ~1%, well inside noise.
 - **The salvage-value trap**: terminal store credits near methane's marginal
   value made the optimiser hoard buffers and never start the kiln.
 - **Perfect information isn't automatically a ceiling**: our forecast MPC

@@ -4,14 +4,15 @@
 
 ## Motivation
 
-In our simulated January in Wiltshire - Rivan's own county - a solar-methane
-plant run the obvious way made **0 kg** of methane in 28 days. The identical
-plant, driven by a scheduler that reads real weather forecasts, made 92 kg
-from the same sky. <!--NUM:wiltshire_jan--> Intermittency is not an
-efficiency problem; it is a scheduling problem, and a remote plant is only
-economical if it schedules itself. This entry is an open digital twin of
-Rivan's process built to measure exactly how much autonomy is worth - under
-real weather, real forecast error, equipment faults and no grid.
+In a simulated October week in Wiltshire - Rivan's own county - a
+solar-methane plant run the obvious way made 9 kg of methane. The identical
+plant, driven by a scheduler reading real weather forecasts, made 260 kg
+from the same sky: it banked heat, calcined feedstock and hydrogen before
+the storm arrived. Intermittency is not an efficiency problem; it is a
+scheduling problem, and a remote plant is only economical if it schedules
+itself. This entry is an open digital twin of Rivan's process built to
+measure exactly how much autonomy is worth - under real weather, real
+forecast error, equipment faults and no grid.
 
 ## The environment
 
@@ -49,33 +50,39 @@ benchmark does not yet impose).
 
 Across 4 European sites x 4 seasons of 2025 (28-day windows), against a
 named run-when-sunny baseline on identical hardware: the forecast MPC
-produced **+90% more methane** <!--NUM:headline_uplift-->, closing
-**~70%** <!--NUM:gap_closed--> of the gap to perfect hindsight (per
-site-month the closure ranges ~30-95%; northern sites gain the most from
-scheduling and close the least of the gap - scheduling matters most, and
-forecasts help least, exactly where sun is scarce). Wiltshire in October:
-41 kg naive vs 784 kg scheduled. <!--NUM:wiltshire_oct--> Faults: a 3-day
-kiln heater failure is detected autonomously within 2 hours from a
-commanded-vs-actual mode mismatch, the MILP replans without the kiln, and
-monthly impact ranges from indistinguishable-from-zero (outage coinciding
-with cloud; the silo and a 2.7x-oversized kiln catch up) to roughly -17%
-(outage in peak sun) <!--NUM:fault_range-->. Solver noise is measured, not
-assumed (`experiments/noise_band.py`); claims inside the band are reported
-as indistinguishable from zero.
+produced **+95.6% more methane**, closing **75%** of the gap to perfect
+hindsight (per site-month: 0-98%, median 75%). The controlled comparison:
+a tuned rulebook that fixes the baseline's dominant misallocation gains
++55.7%; the MPC adds +25.6% on top. The geography is the finding: northern
+sites gain the most from scheduling and close the least of the gap, and the
+extreme cell - Wiltshire in January - is the sharpest measurement of what
+forecast error costs: **0 kg** from every controller we built (the forecast
+MPC spent 144 hours heating a kiln that never crossed calcination
+temperature) against 194 kg for the perfect-forecast oracle. Wiltshire in
+October: 41 kg naive vs 726 kg scheduled. Faults: a 3-day kiln heater
+failure is detected autonomously within 2 hours from a commanded-vs-actual
+mode mismatch, the MILP replans without the kiln, and monthly impact ranges
+from -4% (outage coinciding with cloud; the silo and a 2.7x-oversized kiln
+catch up) to -9.5% (outage in peak July sun). Solver noise is measured, not
+assumed (`experiments/noise_band.py`, 8.2% band); claims inside the band
+are reported as indistinguishable from zero.
 
 ## What didn't work
 
 - **Batteries.** Offered storage at every 2026 price (50-250 GBP/kWh), the
-  scheduler never earned the capex back - the atom buffers already capture
-  the arbitrage - and under real forecast error a deterministic MPC used a
-  battery to do WORSE <!--NUM:battery-->; solving harder did not fix it,
-  consistent with the optimizer's curse. The honest conclusion is a
-  limitation of deterministic planning: robust/stochastic MPC is the named
-  next step, and this benchmark is exactly the environment to test it in.
-- **Hand rules.** Our first heuristic gained ~0.4% over the baseline across
-  the sweep; even a tuned rulebook that fixes the baseline's dominant
-  misallocation (kiln matched to stoichiometric demand) trails the MPC
-  badly. <!--NUM:heuristics--> Intuition does not crack this problem.
+  scheduler never earned the capex back - and 0-2 MWh changed output by
+  less than the measured solver-noise band (8.2%) under both real and
+  perfect forecasts. The atom buffers already capture the arbitrage. We
+  initially measured something more dramatic - batteries actively hurting a
+  deterministic planner - but our own review traced it to a stale-replan
+  bug; the corrected result is the quieter, better-supported claim, and the
+  original lives in git history as a cautionary tale about planning cadence.
+- **Hand rules.** Our first heuristic gained under 1% over the baseline
+  across the sweep; the tuned rulebook captures +55.7% but still leaves a
+  quarter of the MPC's production on the table. (Its own first version made
+  62 kg - a demand-matched kiln load never reaches calcination temperature
+  from cold. Even writing good rules requires the insight the optimiser
+  finds automatically.)
 - **The salvage-value trap.** Terminal store credits near methane's marginal
   value made the optimiser hoard buffers and never start the kiln - a
   cautionary result for anyone bolting an MILP onto a plant.

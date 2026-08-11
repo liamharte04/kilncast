@@ -57,9 +57,15 @@ class RuleBasedTuned:
         action = self.inner.act(obs, forecast)
         ghi = obs["ghi_now"]
         if ghi > SUN_THRESHOLD_WM2:
-            silo_frac = obs["stores"]["silo_kg"] / self.silo_cap
-            top_up = 0.25 if silo_frac < 0.5 else 0.0
-            action.kiln_load = min(1.0, self.kiln_match + top_up)
+            if obs["kiln_temp_frac"] < 0.9:
+                # a demand-matched load never reaches calcination temperature
+                # from cold - heat flat out first, throttle once hot
+                action.kiln_load = 1.0
+            else:
+                silo_frac = obs["stores"]["silo_kg"] / self.silo_cap
+                top_up = 0.25 if silo_frac < 0.5 else 0.0
+                # never below the hold power or the kiln cools mid-day
+                action.kiln_load = min(1.0, max(self.kiln_match + top_up, 0.35))
             action.electrolyser_load = 1.0  # remainder of the sky, plant clips
         return action
 

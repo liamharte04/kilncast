@@ -62,9 +62,14 @@ def main() -> None:
     print("\noracle monotonicity check (perfect info must not lose from more storage):")
     oracle_runs = {size: episode(size, OracleMPC, "oracle") for size in ORACLE_SIZES}
     kgs = [oracle_runs[s]["methane_kg"] for s in ORACLE_SIZES]
-    monotone = all(kgs[i + 1] >= kgs[i] - 0.02 * kgs[i] for i in range(len(kgs) - 1))
+    # tolerance = the MEASURED solver-noise band (experiments/noise_band.py),
+    # falling back to 2% if the study has not been run
+    band_file = RESULTS_DIR / "noise_band" / "summary.json"
+    tol = (json.loads(band_file.read_text())["band_pct"] / 100.0) if band_file.exists() else 0.02
+    monotone = all(kgs[i + 1] >= kgs[i] * (1 - tol) for i in range(len(kgs) - 1))
+    verdict = "MONOTONE within measured noise" if monotone else "NON-MONOTONE beyond noise (investigate!)"
     print(f"  oracle kg by size {ORACLE_SIZES}: {[round(k) for k in kgs]} "
-          f"-> {'MONOTONE (model sane)' if monotone else 'NON-MONOTONE (investigate!)'}")
+          f"(noise tolerance {100 * tol:.1f}%) -> {verdict}")
 
     # flip-point analysis: annualised value of extra methane vs annualised
     # battery cost, across capex scenarios

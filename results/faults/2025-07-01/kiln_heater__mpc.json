@@ -1,0 +1,32 @@
+{
+ "methane_kg": 4354.4,
+ "gbp_per_kg_ch4": 1.279,
+ "methane_value_gbp": 2395.0,
+ "amortised_cost_gbp": 5569.0,
+ "margin_gbp": -3174.0,
+ "plant_utilisation": 0.892,
+ "kg_ch4_per_mwh_used": 29.79,
+ "curtailed_kwh": 17765.0,
+ "curtailed_frac": 0.108,
+ "water_consumed_kg": 19740.0,
+ "limiting_subsystem_hours": {
+  "sabatier-offline": 286,
+  "sabatier": 164,
+  "none": 134,
+  "co2": 56,
+  "solar": 32
+ },
+ "wall_seconds": 781.5,
+ "solver_failures": 0,
+ "scenario": "kiln_heater",
+ "controller": "mpc",
+ "month": "2025-07-01",
+ "fault_window_days": [
+  10,
+  13
+ ],
+ "detection_events": [
+  "h250: kiln fault DETECTED (2h mode mismatch) - replanning without kiln",
+  "h312: repair notification - kiln re-enabled, replanning"
+ ]
+}

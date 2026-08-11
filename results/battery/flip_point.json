@@ -1,0 +1,46 @@
+[
+ {
+  "battery_kwh": 250,
+  "extra_kg_month": 44.3,
+  "extra_value_gbp_yr": 318.0,
+  "beats_capex": {
+   "50": false,
+   "100": false,
+   "150": false,
+   "250": false
+  }
+ },
+ {
+  "battery_kwh": 500,
+  "extra_kg_month": -22.3,
+  "extra_value_gbp_yr": -160.0,
+  "beats_capex": {
+   "50": false,
+   "100": false,
+   "150": false,
+   "250": false
+  }
+ },
+ {
+  "battery_kwh": 1000,
+  "extra_kg_month": 88.1,
+  "extra_value_gbp_yr": 632.0,
+  "beats_capex": {
+   "50": false,
+   "100": false,
+   "150": false,
+   "250": false
+  }
+ },
+ {
+  "battery_kwh": 2000,
+  "extra_kg_month": 163.1,
+  "extra_value_gbp_yr": 1169.0,
+  "beats_capex": {
+   "50": false,
+   "100": false,
+   "150": false,
+   "250": false
+  }
+ }
+]

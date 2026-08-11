@@ -47,6 +47,7 @@ SCENARIOS: dict[str, tuple | None] = {
     "kiln_heater": ("kiln_heater_failed", True, False),
     "electrolyser_degraded_30pct": ("electrolyser_capacity_frac", 0.7, 1.0),
     "irradiance_sensor_bias": ("irradiance_sensor_bias", 250.0, 0.0),
+    "irradiance_sensor_dark_bias": ("irradiance_sensor_bias", -250.0, 0.0),
     "h2_valve_stuck": ("h2_valve_stuck", True, False),
     "panel_soiling_15pct": ("solar_soiling_frac", 0.85, 1.0),
 }
@@ -55,6 +56,7 @@ PAIRINGS = {
     "kiln_heater": ["baseline", "mpc"],
     "electrolyser_degraded_30pct": ["baseline", "mpc"],
     "irradiance_sensor_bias": ["baseline", "heuristic", "mpc"],
+    "irradiance_sensor_dark_bias": ["baseline", "heuristic"],
     "h2_valve_stuck": ["baseline", "mpc"],
     "panel_soiling_15pct": ["baseline", "mpc"],
 }

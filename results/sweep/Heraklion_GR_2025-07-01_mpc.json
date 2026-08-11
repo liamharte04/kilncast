@@ -1,0 +1,28 @@
+{
+ "methane_kg": 5127.9,
+ "gbp_per_kg_ch4": 1.086,
+ "methane_value_gbp": 2820.0,
+ "amortised_cost_gbp": 5569.0,
+ "margin_gbp": -2749.0,
+ "plant_utilisation": 0.987,
+ "kg_ch4_per_mwh_used": 29.9,
+ "curtailed_kwh": 2210.0,
+ "curtailed_frac": 0.013,
+ "water_consumed_kg": 23296.0,
+ "limiting_subsystem_hours": {
+  "sabatier": 218,
+  "sabatier-offline": 217,
+  "none": 146,
+  "co2": 47,
+  "solar": 37,
+  "h2": 7
+ },
+ "wall_seconds": 843.7,
+ "solver_failures": 0,
+ "site": "Heraklion GR",
+ "lat": 35.34,
+ "lon": 25.14,
+ "month": "2025-07-01",
+ "controller": "mpc",
+ "days": 28
+}

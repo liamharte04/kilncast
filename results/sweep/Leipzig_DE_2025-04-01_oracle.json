@@ -1,0 +1,28 @@
+{
+ "methane_kg": 3037.2,
+ "gbp_per_kg_ch4": 1.834,
+ "methane_value_gbp": 1670.0,
+ "amortised_cost_gbp": 5569.0,
+ "margin_gbp": -3899.0,
+ "plant_utilisation": 1.0,
+ "kg_ch4_per_mwh_used": 28.56,
+ "curtailed_kwh": 27.0,
+ "curtailed_frac": 0.0,
+ "water_consumed_kg": 13734.0,
+ "limiting_subsystem_hours": {
+  "sabatier-offline": 351,
+  "sabatier": 153,
+  "none": 112,
+  "solar": 32,
+  "co2": 21,
+  "h2": 3
+ },
+ "wall_seconds": 837.4,
+ "solver_failures": 0,
+ "site": "Leipzig DE",
+ "lat": 51.34,
+ "lon": 12.37,
+ "month": "2025-04-01",
+ "controller": "oracle",
+ "days": 28
+}

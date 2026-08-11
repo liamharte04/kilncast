@@ -1,0 +1,26 @@
+{
+ "methane_kg": 1166.2,
+ "gbp_per_kg_ch4": 4.776,
+ "methane_value_gbp": 641.0,
+ "amortised_cost_gbp": 5569.0,
+ "margin_gbp": -4928.0,
+ "plant_utilisation": 0.961,
+ "kg_ch4_per_mwh_used": 13.26,
+ "curtailed_kwh": 3566.0,
+ "curtailed_frac": 0.039,
+ "water_consumed_kg": 5250.0,
+ "limiting_subsystem_hours": {
+  "h2": 572,
+  "co2": 90,
+  "sabatier": 7,
+  "sabatier-offline": 3
+ },
+ "wall_seconds": 0.8,
+ "scenario": "kiln_heater",
+ "controller": "baseline",
+ "month": "2025-03-01",
+ "fault_window_days": [
+  10,
+  13
+ ]
+}

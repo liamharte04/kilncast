@@ -1,0 +1,28 @@
+{
+ "methane_kg": 2047.3,
+ "gbp_per_kg_ch4": 2.72,
+ "methane_value_gbp": 1126.0,
+ "amortised_cost_gbp": 5569.0,
+ "margin_gbp": -4443.0,
+ "plant_utilisation": 0.855,
+ "kg_ch4_per_mwh_used": 26.17,
+ "curtailed_kwh": 13302.0,
+ "curtailed_frac": 0.145,
+ "water_consumed_kg": 9843.0,
+ "limiting_subsystem_hours": {
+  "sabatier-offline": 437,
+  "sabatier": 89,
+  "none": 80,
+  "co2": 42,
+  "solar": 21,
+  "h2": 3
+ },
+ "wall_seconds": 1396.1,
+ "solver_failures": 0,
+ "tag": "A_t90_g005",
+ "battery_kwh": 0,
+ "mpc_kwargs": {
+  "time_limit_s": 90,
+  "mip_rel_gap": 0.005
+ }
+}

@@ -1,0 +1,28 @@
+{
+ "methane_kg": 2846.4,
+ "gbp_per_kg_ch4": 1.957,
+ "methane_value_gbp": 1566.0,
+ "amortised_cost_gbp": 5569.0,
+ "margin_gbp": -4004.0,
+ "plant_utilisation": 0.789,
+ "kg_ch4_per_mwh_used": 26.73,
+ "curtailed_kwh": 28553.0,
+ "curtailed_frac": 0.211,
+ "water_consumed_kg": 13662.0,
+ "limiting_subsystem_hours": {
+  "sabatier-offline": 336,
+  "sabatier": 142,
+  "none": 132,
+  "co2": 36,
+  "solar": 15,
+  "h2": 11
+ },
+ "wall_seconds": 843.9,
+ "solver_failures": 0,
+ "site": "Wiltshire UK",
+ "lat": 51.2,
+ "lon": -1.8,
+ "month": "2025-07-01",
+ "controller": "mpc",
+ "days": 28
+}

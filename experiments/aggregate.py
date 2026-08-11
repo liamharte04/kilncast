@@ -35,7 +35,9 @@ def main() -> None:
 
     pivot = df.pivot_table(index=["site", "month"], columns="controller",
                            values="methane_kg").reset_index()
-    complete = pivot.dropna(subset=["baseline", "heuristic", "mpc", "oracle"])
+    required = ["baseline", "heuristic", "heuristic-tuned", "mpc", "oracle"]
+    required = [c for c in required if c in pivot.columns]
+    complete = pivot.dropna(subset=required)
     pilot = complete[complete["site"].isin(PILOT_SITES)].copy()
     extras = sorted(set(complete["site"]) - set(PILOT_SITES))
     if extras or len(complete) != len(pivot):
@@ -53,11 +55,15 @@ def main() -> None:
     )
     print(pilot.round(1).to_string(index=False))
 
-    overall = pilot[["baseline", "heuristic", "mpc", "oracle"]].sum()
+    overall = pilot[required].sum()
     uplift = 100 * (overall["mpc"] - overall["baseline"]) / overall["baseline"]
     gap = 100 * (overall["mpc"] - overall["baseline"]) / (overall["oracle"] - overall["baseline"])
     print(f"\nHEADLINE (pooled kg, {len(pilot)} site-months): MPC {overall['mpc']:.0f} kg vs "
           f"baseline {overall['baseline']:.0f} kg = +{uplift:.1f}%, closing {gap:.0f}% of oracle gap")
+    if "heuristic-tuned" in overall:
+        tuned_up = 100 * (overall["heuristic-tuned"] - overall["baseline"]) / overall["baseline"]
+        mpc_vs_tuned = 100 * (overall["mpc"] - overall["heuristic-tuned"]) / overall["heuristic-tuned"]
+        print(f"tuned rulebook: +{tuned_up:.1f}% vs baseline; MPC +{mpc_vs_tuned:.1f}% vs tuned rulebook")
     dist = pilot["gap_closed_pct"]
     print(f"gap-closed distribution across site-months: min {dist.min():.0f}%, "
           f"median {dist.median():.0f}%, max {dist.max():.0f}%")

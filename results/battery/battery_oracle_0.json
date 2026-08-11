@@ -1,0 +1,26 @@
+{
+ "methane_kg": 2594.7,
+ "gbp_per_kg_ch4": 2.146,
+ "methane_value_gbp": 1427.0,
+ "amortised_cost_gbp": 5569.0,
+ "margin_gbp": -4142.0,
+ "plant_utilisation": 1.0,
+ "kg_ch4_per_mwh_used": 28.35,
+ "curtailed_kwh": 0.0,
+ "curtailed_frac": 0.0,
+ "water_consumed_kg": 11862.0,
+ "limiting_subsystem_hours": {
+  "sabatier-offline": 404,
+  "sabatier": 120,
+  "none": 88,
+  "solar": 30,
+  "co2": 27,
+  "h2": 3
+ },
+ "wall_seconds": 702.5,
+ "solver_failures": 0,
+ "battery_kwh": 0,
+ "site": "Seville ES",
+ "month": "2025-03-01",
+ "controller": "oracle"
+}
