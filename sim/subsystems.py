@@ -64,7 +64,6 @@ class Unit:
     start_draw_frac: float
     mode: str = OFF
     start_progress_h: float = 0.0
-    fault_capacity_frac: float = 1.0  # faults scale effective capacity
 
     def command(self, target: str) -> None:
         if target == self.mode or (target == ON and self.mode == STARTING):
@@ -98,7 +97,7 @@ class Unit:
         if self.mode != ON or load_frac <= 0:
             return 0.0
         load = max(self.min_load_frac, min(1.0, load_frac))
-        return self.rated_kw * load * self.fault_capacity_frac
+        return self.rated_kw * load
 
 
 @dataclass

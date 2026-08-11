@@ -33,10 +33,13 @@ class ForecastMPC:
     name = "mpc-forecast"
     uses_actuals = False
 
-    def __init__(self, curves: dict, horizon_h: int = 96, time_limit_s: float = 30.0):
+    def __init__(self, curves: dict, horizon_h: int = 96, time_limit_s: float = 30.0,
+                 mip_rel_gap: float = 0.02, salvage_scale: float = 1.0):
         self.c = curves
         self.H = horizon_h
         self.time_limit = time_limit_s
+        self.mip_rel_gap = mip_rel_gap
+        self.salvage_scale = salvage_scale
         self.plan: pd.DataFrame | None = None
         self.solve_failures = 0
         self.env = None  # only OracleMPC uses this
@@ -93,7 +96,10 @@ class ForecastMPC:
     # ------------------------------------------------------------------ solve
     def act(self, obs: dict, forecast: pd.DataFrame) -> Action:
         t = obs["time"]
-        if self.plan is None or t not in self.plan.index:
+        # replan on every fresh forecast (midnight) as well as on plan
+        # exhaustion - without the midnight trigger the controller silently
+        # executed 96 stale hours per solve and never consumed leads 5-7
+        if self.plan is None or t not in self.plan.index or t == t.normalize():
             self._replan(obs, forecast)
         if self.plan is None or t not in self.plan.index:  # solver failed
             return _fallback_action(obs)
@@ -240,11 +246,12 @@ class ForecastMPC:
         obj = np.zeros(n_var)
         obj[off["c"] : off["c"] + H] = -1.0
         last = H - 1
-        obj[idx("h2", last)] = -0.5 / self.h2_per
-        obj[idx("co2", last)] = -0.15 / self.co2_per
-        obj[idx("silo", last)] = -0.05 / self.co2_per
-        obj[idx("b", last)] = -0.2 / (self.e_h2 * self.h2_per)
-        obj[idx("T", last)] = -2.0
+        s = self.salvage_scale  # sensitivity knob; 1.0 in all published runs
+        obj[idx("h2", last)] = -0.5 * s / self.h2_per
+        obj[idx("co2", last)] = -0.15 * s / self.co2_per
+        obj[idx("silo", last)] = -0.05 * s / self.co2_per
+        obj[idx("b", last)] = -0.2 * s / (self.e_h2 * self.h2_per)
+        obj[idx("T", last)] = -2.0 * s
         obj[off["chg"] : off["chg"] + H] += 1e-4  # discourage battery churn
         obj[off["dis"] : off["dis"] + H] += 1e-4
 
@@ -253,7 +260,7 @@ class ForecastMPC:
             constraints=LinearConstraint(np.vstack(rows), lo, hi),
             bounds=Bounds(lb, ub),
             integrality=integrality,
-            options={"time_limit": self.time_limit, "mip_rel_gap": 0.02},
+            options={"time_limit": self.time_limit, "mip_rel_gap": self.mip_rel_gap},
         )
         # status 0 = proven optimal; status 1 = hit the time limit WITH a
         # feasible incumbent - use it (discarding it silently downgraded the

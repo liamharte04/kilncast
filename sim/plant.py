@@ -96,8 +96,10 @@ class Plant:
         sab = self.units["sabatier"]
         assert isinstance(kiln, Kiln)
 
-        # -- faults modify effective behaviour before anything else
-        elec.fault_capacity_frac = self.faults.electrolyser_capacity_frac
+        # -- faults modify effective behaviour before anything else.
+        # Electrolyser degradation is an EFFICIENCY loss (same power draw,
+        # less H2 per kWh) - a capacity cap would be shadowed whenever the
+        # unit is power-shed below the cap anyway.
         kiln_available = not self.faults.kiln_heater_failed
 
         # -- mode transitions
@@ -144,7 +146,9 @@ class Plant:
             elec_kw = 0.0
 
         # -- battery charge from whatever solar remains (never charged from itself)
-        solar_after_loads = max(0.0, solar_kw - (overhead_kw + absorber_kw + kiln_kw + elec_kw))
+        solar_after_loads = max(
+            0.0, solar_kw - (overhead_kw + kiln_hold_kw + absorber_kw + kiln_kw + elec_kw)
+        )
         charge_kw = min(max(0.0, action.battery_charge_kw), solar_after_loads)
         rejected_kwh = batt.add(charge_kw * self.batt_eff * dt)
         if rejected_kwh > 0:
@@ -183,7 +187,7 @@ class Plant:
         if co2_vented > 0:
             clips.append(f"co2 buffer: full, vented {co2_vented:.0f} kg")
 
-        h2_made = elec_kw * dt / self.e_h2
+        h2_made = elec_kw * dt / self.e_h2 * self.faults.electrolyser_capacity_frac
         h2_lost = stores.h2.add(h2_made)
         if h2_lost > 0:
             clips.append(f"h2 buffer: full, electrolyser output wasted {h2_lost:.1f} kg")

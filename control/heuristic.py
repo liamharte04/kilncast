@@ -24,6 +24,46 @@ SUN_THRESHOLD_WM2 = 50.0
 GOOD_SUN_WM2 = 300.0
 
 
+class RuleBasedTuned:
+    """The strongest hand-rulebook we could write - the fair fight for MPC.
+
+    The naive baseline's dominant loss is misallocation: a 220 kW kiln run
+    flat-out calcines ~183 kg/h CO2 into a 150 kg buffer feeding a reactor
+    that needs ~63 kg/h, venting the rest, while the electrolyser is starved
+    of the power the kiln wasted. This rulebook fixes exactly that:
+
+    1. Kiln load matches stoichiometric demand (plus a silo top-up term),
+       freeing power for the electrolyser.
+    2. Electrolyser takes the remainder of the sky.
+    3. Reactor paced across the night like RuleBased.
+
+    Published so the MPC uplift is reported against BOTH a naive operator and
+    a well-tuned rulebook - not a strawman.
+    """
+
+    name = "heuristic-tuned"
+
+    def __init__(self, curves: dict):
+        self.inner = RuleBased(curves)
+        sab_cap = v(curves, "plant_sizing", "sabatier_capacity_kg_ch4_per_h")
+        co2_per = v(curves, "stoichiometry", "kg_co2_per_kg_ch4")
+        e_kiln = v(curves, "dac", "kiln_energy_kwh_per_t") / 1000.0
+        kiln_kw = v(curves, "plant_sizing", "dac_kiln_kw")
+        # steady-state kiln load that exactly feeds the reactor
+        self.kiln_match = (sab_cap * co2_per * e_kiln) / kiln_kw
+        self.silo_cap = v(curves, "plant_sizing", "silo_hours_cao") * sab_cap * co2_per
+
+    def act(self, obs: dict, forecast) -> Action:
+        action = self.inner.act(obs, forecast)
+        ghi = obs["ghi_now"]
+        if ghi > SUN_THRESHOLD_WM2:
+            silo_frac = obs["stores"]["silo_kg"] / self.silo_cap
+            top_up = 0.25 if silo_frac < 0.5 else 0.0
+            action.kiln_load = min(1.0, self.kiln_match + top_up)
+            action.electrolyser_load = 1.0  # remainder of the sky, plant clips
+        return action
+
+
 class RuleBased:
     name = "heuristic-rules"
 

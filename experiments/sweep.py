@@ -23,7 +23,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from control.baseline import SunFollower
-from control.heuristic import RuleBased
+from control.heuristic import RuleBased, RuleBasedTuned
 from control.mpc import ForecastMPC, OracleMPC
 from experiments.common import RESULTS_DIR, load_sites, run_episode
 from sim.env import PlantEnv
@@ -34,6 +34,7 @@ SEASONAL_MONTHS = ["2025-01-01", "2025-04-01", "2025-07-01", "2025-10-01"]
 CONTROLLERS = {
     "baseline": SunFollower,
     "heuristic": RuleBased,
+    "heuristic-tuned": RuleBasedTuned,
     "mpc": ForecastMPC,
     "oracle": OracleMPC,
 }
@@ -44,7 +45,7 @@ def main() -> None:
     ap.add_argument("--sites", default=",".join(PILOT_SITES))
     ap.add_argument("--all-sites", action="store_true")
     ap.add_argument("--months", default=",".join(SEASONAL_MONTHS))
-    ap.add_argument("--controllers", default="baseline,heuristic,mpc,oracle")
+    ap.add_argument("--controllers", default="baseline,heuristic,heuristic-tuned,mpc,oracle")
     ap.add_argument("--days", type=int, default=28)
     args = ap.parse_args()
 

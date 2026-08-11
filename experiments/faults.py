@@ -1,15 +1,23 @@
 """Fault scenarios: inject mid-episode faults, measure impact and recovery.
 
-Each fault runs against baseline and against MPC-with-monitor on the same
-site-month, plus a no-fault reference. The kiln scenario exercises the full
-autonomy loop the brief asks for: detect (commanded vs actual mode mismatch),
-isolate (MPC replans with the kiln masked out), recover (repair notification
-re-enables it).
+Runs each fault against the relevant controllers on the same site-month,
+plus no-fault references. The kiln scenario exercises the full autonomy loop
+the brief asks for: detect (commanded vs actual mode mismatch), isolate (MPC
+replans with the kiln masked out), recover (repair notification re-enables
+it).
+
+Scenario-controller pairing is deliberate: the irradiance sensor fault
+victimises controllers that READ the sensor (baseline, heuristic) while the
+MPC is architecturally immune (it plans from forecasts) - that contrast is
+the result, not an accident.
+
+Default window is July (peak production - faults have something to break).
+The March runs bound the lucky-timing case; see scripts/verify_kiln_fault.py.
 
 Honest limitation, stated here and in the writeup: recovery relies on a
 repair NOTIFICATION (a human event), not autonomous re-probing.
 
-Usage: uv run python experiments/faults.py
+Usage: uv run python experiments/faults.py [start_date]
 """
 
 from __future__ import annotations
@@ -21,29 +29,41 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from control.baseline import SunFollower
+from control.heuristic import RuleBased
 from control.mpc import ForecastMPC
 from experiments.common import RESULTS_DIR, run_episode
 from sim.env import PlantEnv
 from sim.subsystems import load_curves
 
 SITE = ("Seville ES", 37.39, -5.99)
-START, DAYS = "2025-03-01", 28
+DAYS = 28
 FAULT_START_H, FAULT_END_H = 10 * 24, 13 * 24  # days 10-13
+
+CONTROLLERS = {"baseline": SunFollower, "heuristic": RuleBased, "mpc": ForecastMPC}
+
+# scenario -> (fault attr, on value, off value, controllers to test)
+SCENARIOS: dict[str, tuple | None] = {
+    "none": None,
+    "kiln_heater": ("kiln_heater_failed", True, False),
+    "electrolyser_degraded_30pct": ("electrolyser_capacity_frac", 0.7, 1.0),
+    "irradiance_sensor_bias": ("irradiance_sensor_bias", 250.0, 0.0),
+    "h2_valve_stuck": ("h2_valve_stuck", True, False),
+    "panel_soiling_15pct": ("solar_soiling_frac", 0.85, 1.0),
+}
+PAIRINGS = {
+    "none": ["baseline", "heuristic", "mpc"],
+    "kiln_heater": ["baseline", "mpc"],
+    "electrolyser_degraded_30pct": ["baseline", "mpc"],
+    "irradiance_sensor_bias": ["baseline", "heuristic", "mpc"],
+    "h2_valve_stuck": ["baseline", "mpc"],
+    "panel_soiling_15pct": ["baseline", "mpc"],
+}
 
 
 def fault_setters(name: str):
-    """Returns (apply, clear) callables mutating env.plant.faults."""
-    def make(attr, on_value, off_value):
-        return (lambda env: setattr(env.plant.faults, attr, on_value),
-                lambda env: setattr(env.plant.faults, attr, off_value))
-
-    return {
-        "kiln_heater": make("kiln_heater_failed", True, False),
-        "electrolyser_degraded_30pct": make("electrolyser_capacity_frac", 0.7, 1.0),
-        "irradiance_sensor_bias": make("irradiance_sensor_bias", 250.0, 0.0),
-        "h2_valve_stuck": make("h2_valve_stuck", True, False),
-        "panel_soiling_15pct": make("solar_soiling_frac", 0.85, 1.0),
-    }[name]
+    attr, on_value, off_value = SCENARIOS[name]
+    return (lambda env: setattr(env.plant.faults, attr, on_value),
+            lambda env: setattr(env.plant.faults, attr, off_value))
 
 
 class KilnFaultMonitor:
@@ -85,15 +105,15 @@ def make_hook(apply_fault, clear_fault, monitor=None):
 
 
 def main() -> None:
+    start = sys.argv[1] if len(sys.argv) > 1 else "2025-07-01"
     curves = load_curves()
-    out_dir = RESULTS_DIR / "faults"
+    out_dir = RESULTS_DIR / "faults" / start
     out_dir.mkdir(parents=True, exist_ok=True)
     _, lat, lon = SITE
 
     results: dict = {}
-    for scenario in ["none", "kiln_heater", "electrolyser_degraded_30pct",
-                     "irradiance_sensor_bias", "h2_valve_stuck", "panel_soiling_15pct"]:
-        for cname, factory in [("baseline", SunFollower), ("mpc", ForecastMPC)]:
+    for scenario, controllers in PAIRINGS.items():
+        for cname in controllers:
             key = f"{scenario}__{cname}"
             out = out_dir / f"{key}.json"
             if out.exists():
@@ -101,17 +121,17 @@ def main() -> None:
                 print(f"{key}: cached")
                 continue
             env = PlantEnv.from_site(lat, lon, "2024-12-01", "2025-12-31", curves=curves)
-            controller = factory(curves)
+            controller = CONTROLLERS[cname](curves)
             monitor = KilnFaultMonitor() if (cname == "mpc" and scenario == "kiln_heater") else None
             hook = None
             if scenario != "none":
                 apply_fault, clear_fault = fault_setters(scenario)
                 hook = make_hook(apply_fault, clear_fault, monitor)
             summary = run_episode(
-                controller, env, START, DAYS, hook=hook,
-                series_path=RESULTS_DIR / "series" / f"fault_{key}.json.gz",
+                controller, env, start, DAYS, hook=hook,
+                series_path=RESULTS_DIR / "series" / f"fault_{start}_{key}.json.gz",
             )
-            summary |= {"scenario": scenario, "controller": cname,
+            summary |= {"scenario": scenario, "controller": cname, "month": start,
                         "fault_window_days": [10, 13]}
             if monitor is not None:
                 summary["detection_events"] = monitor.events
@@ -119,13 +139,13 @@ def main() -> None:
             results[key] = summary
             print(f"{key}: {summary['methane_kg']:.0f} kg")
 
-    print(f"\n{'scenario':<32}{'baseline kg':>12}{'mpc kg':>9}{'mpc impact':>12}")
-    ref = results["none__mpc"]["methane_kg"]
-    for scenario in ["none", "kiln_heater", "electrolyser_degraded_30pct",
-                     "irradiance_sensor_bias", "h2_valve_stuck", "panel_soiling_15pct"]:
-        b = results[f"{scenario}__baseline"]["methane_kg"]
-        m = results[f"{scenario}__mpc"]["methane_kg"]
-        print(f"{scenario:<32}{b:>12.0f}{m:>9.0f}{100 * (m - ref) / ref:>+11.1f}%")
+    print(f"\n{'scenario':<32}" + "".join(f"{c:>12}" for c in CONTROLLERS))
+    for scenario, controllers in PAIRINGS.items():
+        cells = "".join(
+            f"{results[f'{scenario}__{c}']['methane_kg']:>12.0f}" if c in controllers else f"{'-':>12}"
+            for c in CONTROLLERS
+        )
+        print(f"{scenario:<32}{cells}")
     ev = results.get("kiln_heater__mpc", {}).get("detection_events", [])
     if ev:
         print("\nkiln detection log:", *ev, sep="\n  ")

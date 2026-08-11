@@ -46,6 +46,12 @@ def run_episode(
         obs = env._obs()
         action = controller.act(obs, env.forecast_now)
         _, result = env.step(action)
+        if result.energy_balance_error_kwh > 1e-6:
+            raise RuntimeError(
+                f"energy balance violated at {obs['time']} "
+                f"({result.energy_balance_error_kwh:.3f} kWh) - the audit exists "
+                f"to stop bad physics reaching results; investigate before rerunning"
+            )
         log.add(result)
         if hook is not None:
             hook(hour, obs, action, result, env, controller)

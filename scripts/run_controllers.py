@@ -14,7 +14,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from control.baseline import SunFollower
-from control.heuristic import RuleBased
+from control.heuristic import RuleBased, RuleBasedTuned
 from control.mpc import ForecastMPC, OracleMPC
 from sim.economics import summarise
 from sim.env import PlantEnv
@@ -51,12 +51,13 @@ def main() -> None:
     controllers = [
         SunFollower(curves),
         RuleBased(curves),
+        RuleBasedTuned(curves),
         ForecastMPC(curves),
         OracleMPC(curves),
     ]
     results = {}
     for controller in controllers:
-        env = PlantEnv.from_site(lat, lon, "2025-01-01", "2025-12-31")
+        env = PlantEnv.from_site(lat, lon, "2024-12-01", "2025-12-31")
         print(f"\n=== {controller.name} ===")
         results[controller.name] = run(controller, env, start, days)
         print(json.dumps(results[controller.name], indent=1))

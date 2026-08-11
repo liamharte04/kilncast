@@ -46,6 +46,10 @@ def summarise(log: EpisodeLog, curves: dict, hours: float) -> dict:
         "amortised_cost_gbp": round(cost, 0),
         "margin_gbp": round(value - cost, 0),
         "plant_utilisation": round(log.utilisation, 3),
+        # utilisation = energy used / energy available. A controller can score
+        # high while making little product (the baseline does) - so we also
+        # report productivity of the energy actually consumed:
+        "kg_ch4_per_mwh_used": round(kg / (log.used_kwh / 1000.0), 2) if log.used_kwh else 0.0,
         "curtailed_kwh": round(log.curtailed_kwh, 0),
         "curtailed_frac": round(log.curtailed_kwh / log.solar_kwh, 3) if log.solar_kwh else 0.0,
         "water_consumed_kg": round(log.water_kg, 0),
