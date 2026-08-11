@@ -1,0 +1,22 @@
+{
+ "methane_kg": 0.0,
+ "gbp_per_kg_ch4": Infinity,
+ "methane_value_gbp": 0.0,
+ "amortised_cost_gbp": 5569.0,
+ "margin_gbp": -5569.0,
+ "plant_utilisation": 0.77,
+ "curtailed_kwh": 4956.0,
+ "curtailed_frac": 0.23,
+ "water_consumed_kg": 65.0,
+ "limiting_subsystem_hours": {
+  "sabatier-offline": 495,
+  "co2": 177
+ },
+ "wall_seconds": 2.8,
+ "site": "Leipzig DE",
+ "lat": 51.34,
+ "lon": 12.37,
+ "month": "2025-01-01",
+ "controller": "heuristic",
+ "days": 28
+}

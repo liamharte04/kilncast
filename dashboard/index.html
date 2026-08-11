@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kilncast - plant twin dashboard</title>
+<link rel="stylesheet" href="vendor/uPlot.min.css">
+<style>
+  :root { --fg: #1c1c1c; --muted: #667; --line: #ddd; --accent: #2a7e43; --bad: #c44e52; }
+  * { box-sizing: border-box; }
+  body { font: 15px/1.5 system-ui, sans-serif; color: var(--fg); margin: 0; background: #fafafa; }
+  header { padding: 14px 22px 10px; border-bottom: 1px solid var(--line); background: #fff; }
+  h1 { font-size: 20px; margin: 0 0 2px; }
+  h1 small { color: var(--muted); font-weight: 400; font-size: 13px; margin-left: 8px; }
+  .stats { display: flex; gap: 26px; margin-top: 8px; flex-wrap: wrap; }
+  .stat b { font-size: 19px; color: var(--accent); display: block; }
+  .stat span { font-size: 12px; color: var(--muted); }
+  nav { display: flex; gap: 6px; padding: 10px 22px; }
+  nav button { padding: 6px 14px; border: 1px solid var(--line); background: #fff;
+               border-radius: 7px; cursor: pointer; font-size: 14px; }
+  nav button.active { background: var(--fg); color: #fff; border-color: var(--fg); }
+  main { padding: 8px 22px 40px; max-width: 1180px; margin: 0 auto; }
+  .controls { display: flex; gap: 12px; align-items: center; margin: 10px 0; flex-wrap: wrap; }
+  .controls select, .controls button { padding: 6px 10px; border: 1px solid var(--line);
+      border-radius: 7px; background: #fff; font-size: 14px; cursor: pointer; }
+  #play { background: var(--accent); color: #fff; border: none; min-width: 84px; }
+  .counters { display: flex; gap: 40px; margin: 6px 0 2px; }
+  .counter b { font-size: 26px; display: block; }
+  .counter.base b { color: var(--bad); }
+  .counter.mpc b { color: var(--accent); }
+  .counter span { font-size: 12px; color: var(--muted); }
+  .stalled { display: inline-block; background: var(--bad); color: #fff; font-weight: 700;
+             font-size: 12px; padding: 2px 8px; border-radius: 5px; margin-left: 8px;
+             visibility: hidden; }
+  .chart { background: #fff; border: 1px solid var(--line); border-radius: 9px;
+           padding: 10px 12px 4px; margin: 12px 0; }
+  .chart h3 { margin: 0 0 4px; font-size: 13px; color: var(--muted); font-weight: 500; }
+  .events { font-size: 13px; background: #fff; border: 1px solid var(--line);
+            border-radius: 9px; padding: 10px 14px; margin: 12px 0; }
+  .events li { margin: 2px 0; }
+  footer { color: var(--muted); font-size: 12px; padding: 0 22px 30px; max-width: 1180px; margin: 0 auto; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Kilncast <small>an open digital twin of a solar-to-methane plant, scheduled against real archived forecasts</small></h1>
+  <div class="stats" id="headline"></div>
+</header>
+<nav>
+  <button data-view="storm" class="active">Storm week</button>
+  <button data-view="fault">Fault replay</button>
+  <button data-view="browse">Browse episodes</button>
+</nav>
+<main id="main"></main>
+<footer>
+  Series are simulation outputs on real ERA5 weather and real as-issued Open-Meteo forecasts
+  (leads 1-7 days; documented climatology tail to day 10). Relative comparisons only -
+  capex assumptions are deliberately conservative. Regenerate everything:
+  <code>uv run python experiments/sweep.py</code>.
+</footer>
+<script src="vendor/uPlot.iife.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

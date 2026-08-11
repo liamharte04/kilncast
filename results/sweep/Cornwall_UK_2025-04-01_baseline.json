@@ -1,0 +1,24 @@
+{
+ "methane_kg": 1324.7,
+ "gbp_per_kg_ch4": 4.204,
+ "methane_value_gbp": 729.0,
+ "amortised_cost_gbp": 5569.0,
+ "margin_gbp": -4841.0,
+ "plant_utilisation": 0.966,
+ "curtailed_kwh": 3730.0,
+ "curtailed_frac": 0.034,
+ "water_consumed_kg": 5963.0,
+ "limiting_subsystem_hours": {
+  "h2": 666,
+  "sabatier-offline": 3,
+  "co2": 2,
+  "sabatier": 1
+ },
+ "wall_seconds": 0.9,
+ "site": "Cornwall UK",
+ "lat": 50.4,
+ "lon": -4.9,
+ "month": "2025-04-01",
+ "controller": "baseline",
+ "days": 28
+}

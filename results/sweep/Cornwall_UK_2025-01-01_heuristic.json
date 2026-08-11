@@ -1,0 +1,22 @@
+{
+ "methane_kg": 0.0,
+ "gbp_per_kg_ch4": Infinity,
+ "methane_value_gbp": 0.0,
+ "amortised_cost_gbp": 5569.0,
+ "margin_gbp": -5569.0,
+ "plant_utilisation": 0.748,
+ "curtailed_kwh": 5789.0,
+ "curtailed_frac": 0.252,
+ "water_consumed_kg": 88.0,
+ "limiting_subsystem_hours": {
+  "sabatier-offline": 592,
+  "co2": 80
+ },
+ "wall_seconds": 2.3,
+ "site": "Cornwall UK",
+ "lat": 50.4,
+ "lon": -4.9,
+ "month": "2025-01-01",
+ "controller": "heuristic",
+ "days": 28
+}

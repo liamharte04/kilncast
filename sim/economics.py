@@ -41,7 +41,7 @@ def summarise(log: EpisodeLog, curves: dict, hours: float) -> dict:
     value = kg * v(curves, "economics", "methane_value_gbp_per_kg")
     return {
         "methane_kg": round(kg, 1),
-        "gbp_per_kg_ch4": round(cost / kg, 3) if kg else float("inf"),
+        "gbp_per_kg_ch4": round(cost / kg, 3) if kg else None,  # never Infinity - not valid JSON
         "methane_value_gbp": round(value, 0),
         "amortised_cost_gbp": round(cost, 0),
         "margin_gbp": round(value - cost, 0),

@@ -1,0 +1,21 @@
+{
+ "methane_kg": 0.0,
+ "gbp_per_kg_ch4": Infinity,
+ "methane_value_gbp": 0.0,
+ "amortised_cost_gbp": 5569.0,
+ "margin_gbp": -5569.0,
+ "plant_utilisation": 0.756,
+ "curtailed_kwh": 4992.0,
+ "curtailed_frac": 0.244,
+ "water_consumed_kg": 22.0,
+ "limiting_subsystem_hours": {
+  "sabatier-offline": 672
+ },
+ "wall_seconds": 3.6,
+ "site": "Wiltshire UK",
+ "lat": 51.2,
+ "lon": -1.8,
+ "month": "2025-01-01",
+ "controller": "heuristic",
+ "days": 28
+}

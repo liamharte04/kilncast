@@ -100,7 +100,17 @@ def main() -> None:
                 "lead7": window["shortwave_radiation_lead7"].round(1).tolist(),
             }
 
-    (DASH_DATA / "manifest.json").write_text(json.dumps(manifest))
+    def sanitize(obj):
+        """Browsers reject Infinity/NaN - legacy result files may contain them."""
+        if isinstance(obj, float) and (obj != obj or obj in (float("inf"), float("-inf"))):
+            return None
+        if isinstance(obj, dict):
+            return {k: sanitize(v) for k, v in obj.items()}
+        if isinstance(obj, list):
+            return [sanitize(v) for v in obj]
+        return obj
+
+    (DASH_DATA / "manifest.json").write_text(json.dumps(sanitize(manifest)))
     n = len(list(DASH_DATA.glob("ep_*.json")))
     print(f"exported {n} episode files + manifest "
           f"({len(manifest['sweep'])} sweep rows, {len(manifest['faults'])} fault runs)")

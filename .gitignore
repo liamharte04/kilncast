@@ -9,9 +9,10 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 
-# Data and outputs
+# Data and outputs. Result SUMMARIES are committed so every README/writeup
+# claim traces to a file in the repo; bulky hourly series regenerate on demand.
 data/cache/
-results/
+results/series/
 *.png
 !docs/figures/*.png
 
