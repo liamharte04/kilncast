@@ -4,7 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kilncast - plant twin dashboard</title>
-<link rel="stylesheet" href="vendor/uPlot.min.css">
 <style>
   :root { --fg: #1c1c1c; --muted: #667; --line: #ddd; --accent: #2a7e43; --bad: #c44e52; }
   * { box-sizing: border-box; }
@@ -38,6 +37,8 @@
   .events { font-size: 13px; background: #fff; border: 1px solid var(--line);
             border-radius: 9px; padding: 10px 14px; margin: 12px 0; }
   .events li { margin: 2px 0; }
+  .legend { display: flex; gap: 18px; font-size: 12px; color: #556; padding: 4px 2px 6px; }
+  .legend i { display: inline-block; width: 12px; height: 3px; margin-right: 5px; vertical-align: middle; }
   footer { color: var(--muted); font-size: 12px; padding: 0 22px 30px; max-width: 1180px; margin: 0 auto; }
 </style>
 </head>
@@ -58,7 +59,7 @@
   capex assumptions are deliberately conservative. Regenerate everything:
   <code>uv run python experiments/sweep.py</code>.
 </footer>
-<script src="vendor/uPlot.iife.min.js"></script>
-<script src="app.js"></script>
+<script src="chart.js?v=2"></script>
+<script src="app.js?v=2"></script>
 </body>
 </html>

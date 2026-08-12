@@ -1,5 +1,7 @@
 /* Kilncast dashboard - static, no build step.
-   Serve with: python -m http.server 8777 --directory dashboard  */
+   Serve with: python -m http.server 8777 --directory dashboard
+   Charts are hand-rolled synchronous canvas (chart.js) - no deferred
+   rendering, so playback can never race an init commit. */
 
 "use strict";
 
@@ -9,7 +11,6 @@ let manifest = null;
 let player = null; // active playback interval
 
 const fetchJson = async (path) => (await fetch(path, { cache: "no-store" })).json();
-
 const fmtKg = (v) => `${Math.round(v).toLocaleString()} kg`;
 
 function stopPlayer() {
@@ -42,70 +43,11 @@ function renderHeadline() {
     <div class="stat"><b>${sites.size} sites x 4 seasons</b><span>real 2025 weather, real as-issued forecasts</span></div>`;
 }
 
-/* ---------------- chart helpers */
-function playheadPlugin(getIdx) {
-  return {
-    hooks: {
-      draw: (u) => {
-        const idx = getIdx();
-        if (idx == null) return;
-        const x = u.valToPos(u.data[0][idx], "x", true);
-        u.ctx.save();
-        u.ctx.strokeStyle = "#111";
-        u.ctx.lineWidth = 1.5;
-        u.ctx.beginPath();
-        u.ctx.moveTo(x, u.bbox.top);
-        u.ctx.lineTo(x, u.bbox.top + u.bbox.height);
-        u.ctx.stroke();
-        u.ctx.restore();
-      },
-    },
-  };
-}
-
-function bandPlugin(getBand, color = "rgba(196,78,82,0.12)") {
-  return {
-    hooks: {
-      drawClear: (u) => {
-        const band = getBand();
-        if (!band) return;
-        const [t0, t1] = band;
-        const x0 = u.valToPos(t0, "x", true);
-        const x1 = u.valToPos(t1, "x", true);
-        u.ctx.save();
-        u.ctx.fillStyle = color;
-        u.ctx.fillRect(x0, u.bbox.top, x1 - x0, u.bbox.height);
-        u.ctx.restore();
-      },
-    },
-  };
-}
-
-function makeChart(el, title, series, data, opts = {}) {
-  const wrap = document.createElement("div");
-  wrap.className = "chart";
-  wrap.innerHTML = `<h3>${title}</h3>`;
-  el.appendChild(wrap);
-  const u = new uPlot({
-    width: Math.min(1120, el.clientWidth - 26),
-    height: opts.height || 190,
-    series: [{}, ...series],
-    axes: [
-      {},
-      { size: 55 },
-      ...(opts.rightAxis ? [{ side: 1, scale: "r", size: 50, grid: { show: false } }] : []),
-    ],
-    scales: opts.rightAxis ? { r: { auto: true } } : {},
-    plugins: opts.plugins || [],
-    legend: { live: false },
-  }, data, wrap);
-  return u;
-}
-
-const toEpoch = (ep) => ep.time.map((t) => new Date(t).getTime() / 1000);
+/* ---------------- data helpers */
+const toEpoch = (ep) => ep.time.map((t) => new Date(t + "Z").getTime() / 1000);
 
 function slice(ep, startIso, days) {
-  const t0 = new Date(startIso).getTime() / 1000;
+  const t0 = new Date(startIso + "T00:00:00Z").getTime() / 1000;
   const t1 = t0 + days * 86400;
   const ts = toEpoch(ep);
   const i0 = ts.findIndex((t) => t >= t0);
@@ -114,7 +56,6 @@ function slice(ep, startIso, days) {
   const cut = (arr) => arr.slice(i0, i1);
   const out = { time: cut(ts) };
   for (const k of Object.keys(ep)) if (k !== "time") out[k] = cut(ep[k]);
-  // re-zero cumulative methane inside the window
   const base0 = ep.ch4_cum[i0 > 0 ? i0 - 1 : 0];
   out.ch4_cum = out.ch4_cum.map((v) => +(v - (i0 > 0 ? base0 : 0)).toFixed(1));
   return out;
@@ -151,33 +92,37 @@ async function viewStorm() {
     The red dashed line is what the 7-day-ahead forecast promised; the grey line is what the sky delivered.</p>`;
 
   const charts = $("#charts");
-  const getIdx = () => idx;
-  const plugins = [playheadPlugin(getIdx)];
 
-  const fc = storm.forecast || null;
-  const fcSeries = fc ? slice({ time: fc.time, lead1: fc.lead1, lead7: fc.lead7, ch4_cum: fc.lead1 }, storm.week_start, days) : null;
+  let fcSeries = null;
+  if (storm.forecast) {
+    const fc = storm.forecast;
+    fcSeries = slice({ time: fc.time, lead1: fc.lead1, lead7: fc.lead7, ch4_cum: fc.lead1 },
+                     storm.week_start, days);
+  }
 
-  const skyData = [m.time, m.ghi, fcSeries ? fcSeries.lead1 : null, fcSeries ? fcSeries.lead7 : null]
-    .filter((s) => s !== null);
   const skySeries = [
-    { label: "actual W/m2", stroke: "#555", width: 1.5 },
+    { data: m.ghi, color: "#555", label: "actual W/m2", width: 1.8 },
     ...(fcSeries ? [
-      { label: "forecast 1d ahead", stroke: "#3b7dd8", width: 1, dash: [4, 4] },
-      { label: "forecast 7d ahead", stroke: "#c44e52", width: 1, dash: [6, 4] },
+      { data: fcSeries.lead1, color: "#3b7dd8", label: "forecast 1d ahead", width: 1.2, dash: [4, 4] },
+      { data: fcSeries.lead7, color: "#c44e52", label: "forecast 7d ahead", width: 1.2, dash: [6, 4] },
     ] : []),
   ];
-  const uSky = makeChart(charts, "the sky: forecast vs delivered", skySeries, skyData, { plugins });
-
-  const uCh4 = makeChart(charts, "cumulative methane (kg)", [
-    { label: "baseline", stroke: "#c44e52", width: 2 },
-    { label: "forecast MPC", stroke: "#2a7e43", width: 2 },
-  ], [m.time, b.ch4_cum, m.ch4_cum], { plugins });
-
-  const uStores = makeChart(charts, "MPC stores: CaO silo + H2 tank (kg), kiln temperature (right)", [
-    { label: "silo kg", stroke: "#8a6d3b", width: 1.5 },
-    { label: "H2 kg", stroke: "#3b7dd8", width: 1.5 },
-    { label: "kiln temp (frac)", stroke: "#e8710a", width: 1.5, scale: "r" },
-  ], [m.time, m.silo_kg, m.h2_kg, m.kiln_temp], { plugins, rightAxis: true });
+  const uSky = lineChart(charts, "the sky: forecast vs delivered", { x: m.time, series: skySeries });
+  const uCh4 = lineChart(charts, "cumulative methane (kg)", {
+    x: m.time,
+    series: [
+      { data: b.ch4_cum, color: "#c44e52", label: "baseline", width: 2.2 },
+      { data: m.ch4_cum, color: "#2a7e43", label: "forecast MPC", width: 2.2 },
+    ],
+  });
+  const uStores = lineChart(charts, "MPC stores: CaO silo + H2 tank (kg), kiln temperature (right)", {
+    x: m.time,
+    series: [
+      { data: m.silo_kg, color: "#8a6d3b", label: "silo kg" },
+      { data: m.h2_kg, color: "#3b7dd8", label: "H2 kg" },
+      { data: m.kiln_temp, color: "#e8710a", label: "kiln temp (frac)", right: true },
+    ],
+  });
 
   const charts3 = [uSky, uCh4, uStores];
   const update = () => {
@@ -187,7 +132,7 @@ async function viewStorm() {
     $("#cmpc").textContent = fmtKg(m.ch4_cum[idx]);
     const recent = b.ch4_cum[idx] - b.ch4_cum[Math.max(0, idx - 12)];
     $("#stall").style.visibility = idx > 24 && recent < 0.5 ? "visible" : "hidden";
-    charts3.forEach((u) => u.redraw());
+    charts3.forEach((c) => c.draw(idx));
   };
   $("#scrub").oninput = (e) => { idx = +e.target.value; update(); };
   $("#play").onclick = () => {
@@ -229,15 +174,20 @@ async function viewFault() {
     const ts = toEpoch(ep);
     const [d0, d1] = f.fault_window_days || [10, 13];
     const band = [ts[0] + d0 * 86400, ts[0] + d1 * 86400];
-    const plugins = [bandPlugin(() => band)];
-    makeChart(body, `cumulative methane - fault window shaded (${f.scenario})`, [
-      { label: "with fault", stroke: "#c44e52", width: 2 },
-      ...(refEp ? [{ label: "no fault", stroke: "#2a7e43", width: 1.5, dash: [5, 4] }] : []),
-    ], [ts, ep.ch4_cum, ...(refEp ? [refEp.ch4_cum] : [])], { plugins });
-    makeChart(body, "kiln temperature + silo level", [
-      { label: "kiln temp", stroke: "#e8710a", width: 1.5 },
-      { label: "silo kg", stroke: "#8a6d3b", width: 1.5, scale: "r" },
-    ], [ts, ep.kiln_temp, ep.silo_kg], { plugins, rightAxis: true });
+    lineChart(body, `cumulative methane - fault window shaded (${f.scenario})`, {
+      x: ts, band,
+      series: [
+        { data: ep.ch4_cum, color: "#c44e52", label: "with fault", width: 2 },
+        ...(refEp ? [{ data: refEp.ch4_cum, color: "#2a7e43", label: "no fault", width: 1.6, dash: [5, 4] }] : []),
+      ],
+    });
+    lineChart(body, "kiln temperature + silo level", {
+      x: ts, band,
+      series: [
+        { data: ep.kiln_temp, color: "#e8710a", label: "kiln temp" },
+        { data: ep.silo_kg, color: "#8a6d3b", label: "silo kg", right: true },
+      ],
+    });
     if (f.detection_events && f.detection_events.length) {
       body.insertAdjacentHTML("beforeend",
         `<div class="events"><b>autonomy log</b><ul>${
@@ -246,7 +196,7 @@ async function viewFault() {
     }
   };
   $("#fsel").onchange = (e) => render(+e.target.value);
-  const def = faults.findIndex((f) => f.scenario === "kiln_heater" && f.controller === "mpc");
+  const def = faults.findIndex((f) => f.scenario === "kiln_heater" && f.controller === "mpc" && f.month === "2025-07-01");
   $("#fsel").value = String(Math.max(0, def));
   render(Math.max(0, def));
 }
@@ -267,18 +217,24 @@ async function viewBrowse() {
     const ep = await fetchJson(`data/ep_${meta.key}.json`);
     body.innerHTML = "";
     const ts = toEpoch(ep);
-    makeChart(body, "solar available vs used (kW)", [
-      { label: "solar", stroke: "#e8b117", width: 1 },
-      { label: "used", stroke: "#444", width: 1 },
-    ], [ts, ep.solar_kw, ep.used_kw]);
-    makeChart(body, "cumulative methane (kg)", [
-      { label: "kg", stroke: "#2a7e43", width: 2 },
-    ], [ts, ep.ch4_cum]);
-    makeChart(body, "stores + kiln temperature", [
-      { label: "silo kg", stroke: "#8a6d3b", width: 1 },
-      { label: "H2 kg", stroke: "#3b7dd8", width: 1 },
-      { label: "kiln temp", stroke: "#e8710a", width: 1, scale: "r" },
-    ], [ts, ep.silo_kg, ep.h2_kg, ep.kiln_temp], { rightAxis: true });
+    lineChart(body, "solar available vs used (kW)", {
+      x: ts,
+      series: [
+        { data: ep.solar_kw, color: "#e8b117", label: "solar", width: 1 },
+        { data: ep.used_kw, color: "#444", label: "used", width: 1 },
+      ],
+    });
+    lineChart(body, "cumulative methane (kg)", {
+      x: ts, series: [{ data: ep.ch4_cum, color: "#2a7e43", label: "kg", width: 2 }],
+    });
+    lineChart(body, "stores + kiln temperature", {
+      x: ts,
+      series: [
+        { data: ep.silo_kg, color: "#8a6d3b", label: "silo kg", width: 1 },
+        { data: ep.h2_kg, color: "#3b7dd8", label: "H2 kg", width: 1 },
+        { data: ep.kiln_temp, color: "#e8710a", label: "kiln temp", right: true, width: 1 },
+      ],
+    });
   };
   $("#esel").onchange = (e) => render(+e.target.value);
   render(0);
