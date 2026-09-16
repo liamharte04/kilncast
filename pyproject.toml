@@ -13,6 +13,8 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "imageio>=2.37.4",
+    "imageio-ffmpeg>=0.6.0",
     "pytest>=8.3",
     "ruff>=0.8",
 ]
